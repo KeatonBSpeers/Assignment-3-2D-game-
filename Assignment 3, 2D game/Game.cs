@@ -45,6 +45,8 @@ namespace MohawkGame2D
             {
                 playerY += speed * dt;
             }
+           
+            //Self Destruct Buttons
             if (Raylib.IsKeyDown(KeyboardKey.PageUp))
             {
                 playerX -= speed * dt;
