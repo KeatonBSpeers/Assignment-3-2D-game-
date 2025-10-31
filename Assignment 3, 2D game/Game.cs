@@ -175,48 +175,10 @@ namespace MohawkGame2D
             playerX = Math.Clamp(playerX, radius, Raylib.GetScreenWidth() - radius);
             playerY = Math.Clamp(playerY, radius, Raylib.GetScreenHeight() - radius);
 
-            // Wall contacts for wall-jump detection (left/right walls only)
-            bool touchingLeftWall = Raylib.CheckCollisionCircleRec(new Vector2(ballX, ballY), radius, leftWall);
-            bool touchingRightWall = Raylib.CheckCollisionCircleRec(new Vector2(ballX, ballY), radius, rightWall);
-            bool touchingTopWall = Raylib.CheckCollisionCircleRec(new Vector2(ballX, ballY), radius, topWall);
-            bool touchingBottomWall = Raylib.CheckCollisionCircleRec(new Vector2(ballX, ballY), radius, bottomWall);
-            bool onWall = touchingLeftWall || touchingRightWall || touchingTopWall || touchingBottomWall;
-
-
-            {
-
-
-
-
-
-                // wall jump impulse if jumping from a wall
-                if (onWall)
-                {
-                    if (touchingLeftWall)
-                    {
-                        velocityX = wallJumpImpulse; // push right
-                        ballX = leftWall.X + leftWall.Width + radius + 0.5f;
-                    }
-                    if (touchingRightWall)
-                    {
-                        velocityX = -wallJumpImpulse; // push left
-                        ballX = rightWall.X - radius - 0.5f;
-                    }
-                    if (touchingTopWall)
-                    {
-                        velocityY = wallJumpImpulse; // push down
-                        ballY = topWall.Y + topWall.Height + radius + 0.5f;
-                    }
-                    if (touchingBottomWall)
-                    {
-                        velocityY = -wallJumpImpulse; // push up
-                        ballY = bottomWall.Y - radius - 0.5f;
-                    }
-                }
+         
 
                 Draw.FillColor = Color.OffWhite;
                 Draw.Rectangle(playerX, playerY, 25, 130);
             }
         }
     } 
-}
