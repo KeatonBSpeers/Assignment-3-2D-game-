@@ -23,7 +23,7 @@ namespace MohawkGame2D
         private static readonly System.Random rng = new();
 
         #endregion
-
+        
         #region Public Methods
 
         /// <summary>
