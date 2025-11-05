@@ -1,184 +1,125 @@
 ﻿using Raylib_cs;
 using System;
+using System.Collections.Generic;
 using System.Numerics;
-using System.Security.Cryptography;
 
 namespace MohawkGame2D
 {
-    /// <summary>
-    ///     Your game code goes inside this class!
-    /// </summary>
     public class Game
     {
-        // Place your variables here:
-        float playerX = 600;
-        float playerY = 100;
+        // Paddle setup
+        float playerX = 50;
+        float playerY = 250;
+        float opponentX = 725;
+        float opponentY = 250;
+        float paddleWidth = 25;
+        float paddleHeight = 130;
+        float paddleSpeed = 300f;
 
-        // Opponent Variables
-        float oppenentX = 200;
-        float oppenentY = 100;
-        // movement speed in pixels per second
-        float speed = 200f;
-        //Ball Variables
-        float ballX = 400;
-        float ballY = 300;
+        // Ball list
+        List<Ball> balls = new List<Ball>();
 
-        float velocityX = 0f;
-        float velocityY = 0f;
-        float gravity = 1500f;     // pixels per second^2
-
-        // screen-related
-        readonly float wallThickness = 20f;
-        int screenWidth;
-        int screenHeight;
-
-        // Walls
-        Rectangle leftWall;
-        Rectangle rightWall;
-        Rectangle topWall;
-        Rectangle bottomWall;
-
-        readonly float wallJumpImpulse = 300f;       // horizontal push when wall-jumping
-
-
-
-
-
-        /// <summary>
-        ///     Setup runs once before the game loop begins.
-        /// </summary>
         public void Setup()
         {
-            Window.SetTitle("Assignment 3 - Pong Keaton");
+            Window.SetTitle("Assignment 3 - Multi-Ball Pong");
             Window.SetSize(800, 600);
-            Color Red = new Color(255, 0, 0);
             Window.SetFpsToMonitorRefreshRate();
 
-
-            // initialize walls
-            leftWall = new Rectangle(0, 0, wallThickness, screenHeight);
-            rightWall = new Rectangle(screenWidth - wallThickness, 0, wallThickness, screenHeight);
-            topWall = new Rectangle(0, 0, screenWidth, wallThickness);
-            bottomWall = new Rectangle(0, screenHeight - wallThickness, screenWidth, wallThickness);
-
+            // Start with one ball
+            balls.Add(new Ball(400, 300, 200, 150));
         }
 
-        public class Collision //Collision system for paddles and ball
-        {
-            Vector2 poistion;
-            Vector2 velocity;
-            Vector2 size;
-            Vector2 color;
-
-            public void setup()
-            {
-                //place ball on screen, random position currently
-                poistion = Random.Vector2(Window.Size);
-                //Create vector to move ball and react accordingly to direction
-                Vector2 direction = Random.Direction();
-                float Speed = 300f;
-                velocity = direction * Speed;
-                size = new Vector2(15, 15);
-
-
-            }
-
-        }
-        /// <summary>
-        ///     Update runs every frame.
-        /// </summary>
         public void Update()
         {
             Window.ClearBackground(Color.Black);
-            Draw.FillColor = Color.OffWhite;
-            Draw.Rectangle(oppenentX, oppenentY, 25, 130);
-
-            // delta time for frame-independent movement
             float dt = Raylib.GetFrameTime();
 
-            // update walls to follow screen size
-            leftWall = new Rectangle(0, 0, wallThickness, screenHeight);
-            rightWall = new Rectangle(screenWidth - wallThickness, 0, wallThickness, screenHeight);
-            topWall = new Rectangle(0, 0, screenWidth, wallThickness);
-            bottomWall = new Rectangle(0, screenHeight - wallThickness, screenWidth, wallThickness);
+            // --- Player movement ---
+            if (Raylib.IsKeyDown(KeyboardKey.W))
+                playerY -= paddleSpeed * dt;
+            if (Raylib.IsKeyDown(KeyboardKey.S))
+                playerY += paddleSpeed * dt;
+            playerY = Math.Clamp(playerY, 0, Window.Height - paddleHeight);
 
+            // --- Opponent AI ---
+            if (opponentY + paddleHeight / 2 < balls[0].Y)
+                opponentY += paddleSpeed * 0.75f * dt;
+            else if (opponentY + paddleHeight / 2 > balls[0].Y)
+                opponentY -= paddleSpeed * 0.75f * dt;
+            opponentY = Math.Clamp(opponentY, 0, Window.Height - paddleHeight);
 
-            // WASD movement (S = up, W = down, D = left, A = right)
-            if (Raylib.GetRandomValue(0, 9) == 0) // 1-in-10 chance (0..9)
+            // --- Update all balls ---
+            for (int i = 0; i < balls.Count; i++)
             {
-                if (Raylib.IsKeyDown(KeyboardKey.S))
-                {
+                Ball b = balls[i];
+                b.X += b.SpeedX * dt;
+                b.Y += b.SpeedY * dt;
 
-                    playerY -= speed * dt;
-
-                }
-            }
-            if (Raylib.GetRandomValue(0, 9) == 0)
-            {
-                if (Raylib.IsKeyDown(KeyboardKey.W))
+                // Bounce off top/bottom
+                if (b.Y - b.Radius <= 0 || b.Y + b.Radius >= Window.Height)
                 {
-                    playerY += speed * dt;
+                    b.SpeedY *= -1;
+                    b.Y = Math.Clamp(b.Y, b.Radius, Window.Height - b.Radius);
                 }
-            }
 
-            if (Raylib.GetRandomValue(0, 9) == 0) // 1-in-10 chance (0..9)
-            {
-                if (Raylib.IsKeyDown(KeyboardKey.D))
+                // Player paddle collision
+                if (b.X - b.Radius <= playerX + paddleWidth &&
+                    b.Y >= playerY && b.Y <= playerY + paddleHeight)
                 {
-                    playerX -= speed * dt;
+                    b.SpeedX = Math.Abs(b.SpeedX); // bounce right
+                    b.X = playerX + paddleWidth + b.Radius;
+                    if (Raylib.GetRandomValue(0, 4) == 0)
+                    {
+                        balls.Add(new Ball(b.X, b.Y, 250, -200)); // duplicate!
+                    }
                 }
-            }
-            if (Raylib.GetRandomValue(0, 9) == 0) // 1-in-10 chance (0..9)
-            { if (Raylib.IsKeyDown(KeyboardKey.A))
+                // Opponent paddle collision
+                if (b.X + b.Radius >= opponentX &&
+                    b.Y >= opponentY && b.Y <= opponentY + paddleHeight)
                 {
-                    playerX += speed * dt;
-                }
-            }
+                    b.SpeedX = -Math.Abs(b.SpeedX); // bounce left
+                    b.X = opponentX - b.Radius;
+                    if (Raylib.GetRandomValue(0, 4) == 0)
+                    {
+                        balls.Add(new Ball(b.X, b.Y, -250, 200)); // duplicate!
 
-            //oppenent movement arrow keys
-            if (Raylib.GetRandomValue(0, 9) == 0) // 1-in-10 chance (0..9)
-            {
-                if (Raylib.IsKeyDown(KeyboardKey.Down))
-                {
-                    oppenentY -= speed * dt;
+                    }
                 }
-            }
-            if (Raylib.GetRandomValue(0, 9) == 0)
-            { if (Raylib.IsKeyDown(KeyboardKey.Up))
+
+                // Bounce off left/right boundaries
+                if (b.X - b.Radius <= 0 || b.X + b.Radius >= Window.Width)
                 {
-                    oppenentY += speed * dt;
+                    b.SpeedX *= -1;
+                    b.X = Math.Clamp(b.X, b.Radius, Window.Width - b.Radius);
                 }
-            }
-            if (Raylib.GetRandomValue(0, 9) == 0)
-            { if (Raylib.IsKeyDown(KeyboardKey.Right))
-                {
-                    oppenentX -= speed * dt;
-                }
-            }
-            if (Raylib.GetRandomValue(0, 9) == 0)
-            { if (Raylib.IsKeyDown(KeyboardKey.Left))
-                {
-                    oppenentX += speed * dt;
-                }
-            }
 
-            // update ball position 
-            ballX += velocityY * dt;
-            // apply gravity to ball's vertical velocity
-             += gravity * dt;
-            // draw ball
-            Draw.FillColor = Color.OffWhite;
-            Draw.Circle(ballX, ballY, 15);
-
-            // optional: clamp the player inside the window so the circle stays visible
-            float radius = 50f;
-            playerX = Math.Clamp(playerX, radius, Raylib.GetScreenWidth() - radius);
-            playerY = Math.Clamp(playerY, radius, Raylib.GetScreenHeight() - radius);
-
-         
-
+                // Draw the ball
                 Draw.FillColor = Color.OffWhite;
-                Draw.Rectangle(playerX, playerY, 25, 130);
+                Draw.Circle(b.X, b.Y, b.Radius);
+            }
+
+            // --- Draw paddles ---
+            Draw.FillColor = Color.OffWhite;
+            Draw.Rectangle(playerX, playerY, paddleWidth, paddleHeight);
+            Draw.Rectangle(opponentX, opponentY, paddleWidth, paddleHeight);
+        }
+
+        // --- Ball structure ---
+        public class Ball
+        {
+            public float X;
+            public float Y;
+            public float SpeedX;
+            public float SpeedY;
+            public float Radius = 15f;
+
+            public Ball(float x, float y, float sx, float sy)
+            {
+                X = x;
+                Y = y;
+                SpeedX = sx;
+                SpeedY = sy;
             }
         }
-    } 
+    }
+}
